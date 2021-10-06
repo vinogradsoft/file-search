@@ -39,7 +39,6 @@ class ProxyVisitor implements Visitor
     }
 
     /**
-     * TODO: test
      * @param AbstractTraversalStrategy $scanStrategy
      * @param $detect
      */
@@ -49,7 +48,6 @@ class ProxyVisitor implements Visitor
     }
 
     /**
-     * TODO: test
      * @param AbstractTraversalStrategy $scanStrategy
      * @param NodeFactory $factory
      * @param $detect
@@ -60,7 +58,6 @@ class ProxyVisitor implements Visitor
     }
 
     /**
-     * TODO: test
      * @param AbstractTraversalStrategy $scanStrategy
      * @param NodeFactory $factory
      * @param $detect
@@ -81,7 +78,6 @@ class ProxyVisitor implements Visitor
     }
 
     /**
-     * TODO: test
      * @param AbstractTraversalStrategy $scanStrategy
      * @param NodeFactory $factory
      * @param $detect
@@ -101,9 +97,6 @@ class ProxyVisitor implements Visitor
         }
     }
 
-    /**
-     * TODO: test
-     */
     public function clear()
     {
         $this->leafHandler = null;
@@ -114,7 +107,6 @@ class ProxyVisitor implements Visitor
     }
 
     /**
-     * TODO: test
      * @param TargetHandler|null $leafHandler
      * @param TargetHandler|null $nodeHandler
      * @param bool $nodeMultiTarget
@@ -134,7 +126,6 @@ class ProxyVisitor implements Visitor
     }
 
     /**
-     * TODO: test
      * @return Visitor
      */
     public function extract(): Visitor
