@@ -3,31 +3,27 @@ declare(strict_types=1);
 
 namespace Vinograd\FileSearch;
 
-use Vinograd\Scanner\Exception\ConfigurationException;
 use Vinograd\Scanner\Filter;
 
 class BasenameFilter implements Filter
 {
-    /** @var string */
-    private $config;
+
+    private string|null $config;
 
     /**
-     * @param string $path
-     * @return bool
+     * @inheritDoc
      */
-    public function filter($path): bool
+    public function filter(mixed $element): bool
     {
-        return $this->config === basename($path);
+        return $this->config === basename($element);
     }
 
     /**
      * @param string $config
      */
-    public function setConfiguration($config): void
+    public function setConfiguration(string $config): void
     {
-        if (!is_string($config)) {
-            throw new ConfigurationException('Invalid filter parameter type. String expected.');
-        }
         $this->config = $config;
     }
+
 }

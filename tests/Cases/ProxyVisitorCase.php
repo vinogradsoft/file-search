@@ -5,7 +5,6 @@ namespace Test\Cases;
 
 use PHPUnit\Framework\TestCase;
 use Vinograd\Scanner\AbstractTraversalStrategy;
-use Vinograd\Scanner\NodeFactory;
 use Vinograd\Scanner\Visitor;
 
 abstract class ProxyVisitorCase extends TestCase implements Visitor
@@ -16,17 +15,17 @@ abstract class ProxyVisitorCase extends TestCase implements Visitor
 
     }
 
-    public function scanCompleted(AbstractTraversalStrategy $scanStrategy, NodeFactory $factory, $detect): void
+    public function scanCompleted(AbstractTraversalStrategy $scanStrategy, $detect): void
     {
 
     }
 
-    public function visitLeaf(AbstractTraversalStrategy $scanStrategy, NodeFactory $factory, $detect, $found, $data = null): void
+    public function visitLeaf(AbstractTraversalStrategy $scanStrategy, mixed $parentNode, mixed $currentElement, mixed $data = null): void
     {
 
     }
 
-    public function visitNode(AbstractTraversalStrategy $scanStrategy, NodeFactory $factory, $detect, $found, $data = null): void
+    public function visitNode(AbstractTraversalStrategy $scanStrategy, mixed $parentNode, mixed $currentNode, mixed $data = null): void
     {
 
     }

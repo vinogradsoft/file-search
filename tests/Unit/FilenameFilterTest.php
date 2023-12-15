@@ -5,7 +5,6 @@ namespace Test\Unit;
 
 use PHPUnit\Framework\TestCase;
 use Vinograd\FileSearch\NameFilter;
-use Vinograd\Scanner\Exception\ConfigurationException;
 
 class FilenameFilterTest extends TestCase
 {
@@ -33,10 +32,4 @@ class FilenameFilterTest extends TestCase
 
     }
 
-    public function testSetConfiguration()
-    {
-        $this->expectException(ConfigurationException::class);
-        $basenameFilter = new NameFilter();
-        $basenameFilter->setConfiguration(['php']);
-    }
 }

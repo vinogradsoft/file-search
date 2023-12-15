@@ -5,15 +5,13 @@ namespace Test\Unit;
 
 use Test\Cases\ScannerFactoryCase;
 use Vinograd\FilesDriver\FilesystemDriver;
-use Vinograd\FileSearch\DefaultNodeFactory;
 use Vinograd\FileSearch\ProxyVisitor;
 use Vinograd\FileSearch\ScannerFactory;
-use Vinograd\FileSearch\TargetHandler;
+use Vinograd\FileSearch\SecondLevelFilter;
 use Vinograd\Scanner\AbstractTraversalStrategy;
 use Vinograd\Scanner\BreadthStrategy;
 use Vinograd\Scanner\Driver;
 use Vinograd\Scanner\Filter;
-use Vinograd\Scanner\NodeFactory;
 use Vinograd\Scanner\Visitor;
 
 class ScannerFactoryTest extends ScannerFactoryCase
@@ -33,23 +31,16 @@ class ScannerFactoryTest extends ScannerFactoryCase
         self::assertSame($strategy, $scannerFactory->getStrategy());
     }
 
-    public function testSetNodeFactory()
-    {
-        $scannerFactory = new ScannerFactory();
-        $scannerFactory->setNodeFactory($factory = $this->getMockForAbstractClass(NodeFactory::class));
-        self::assertSame($factory, $scannerFactory->getNodeFactory());
-    }
-
     public function testSetLeafFilters()
     {
         $scannerFactory = new ScannerFactory();
-        self::assertEmpty($scannerFactory->getLeafFilters());
-        $scannerFactory->setLeafFilters([
+        self::assertEmpty($scannerFactory->getFileFilters());
+        $scannerFactory->setFileFilters([
             $filter1 = $this->getMockForAbstractClass(Filter::class),
             $filter2 = $this->getMockForAbstractClass(Filter::class),
             $filter3 = $this->getMockForAbstractClass(Filter::class),
         ]);
-        $filters = $scannerFactory->getLeafFilters();
+        $filters = $scannerFactory->getFileFilters();
         self::assertContains($filter1, $filters);
         self::assertContains($filter2, $filters);
         self::assertContains($filter3, $filters);
@@ -58,13 +49,13 @@ class ScannerFactoryTest extends ScannerFactoryCase
     public function testSetNodeFilters()
     {
         $scannerFactory = new ScannerFactory();
-        self::assertEmpty($scannerFactory->getNodeFilters());
-        $scannerFactory->setNodeFilters([
+        self::assertEmpty($scannerFactory->getDirectoryFilters());
+        $scannerFactory->setDirectoryFilters([
             $filter1 = $this->getMockForAbstractClass(Filter::class),
             $filter2 = $this->getMockForAbstractClass(Filter::class),
             $filter3 = $this->getMockForAbstractClass(Filter::class),
         ]);
-        $filters = $scannerFactory->getNodeFilters();
+        $filters = $scannerFactory->getDirectoryFilters();
         self::assertContains($filter1, $filters);
         self::assertContains($filter2, $filters);
         self::assertContains($filter3, $filters);
@@ -73,25 +64,25 @@ class ScannerFactoryTest extends ScannerFactoryCase
     public function testSetNodeTargetHandler()
     {
         $scannerFactory = new ScannerFactory();
-        self::assertTrue($scannerFactory->isNodeMultiTarget());
-        $scannerFactory->setNodeTargetHandler(
-            $handler = $this->getMockForAbstractClass(TargetHandler::class),
+        self::assertTrue($scannerFactory->isDirectoryMultiTarget());
+        $scannerFactory->setDirectorySecondLevelFilter(
+            $handler = $this->getMockForAbstractClass(SecondLevelFilter::class),
             false
         );
-        self::assertFalse($scannerFactory->isNodeMultiTarget());
-        self::assertSame($handler, $scannerFactory->getNodeTargetHandler());
+        self::assertFalse($scannerFactory->isDirectoryMultiTarget());
+        self::assertSame($handler, $scannerFactory->getDirectorySecondLevelFilter());
     }
 
     public function testSetLeafTargetHandler()
     {
         $scannerFactory = new ScannerFactory();
-        self::assertTrue($scannerFactory->isLeafMultiTarget());
-        $scannerFactory->setLeafTargetHandler(
-            $handler = $this->getMockForAbstractClass(TargetHandler::class),
+        self::assertTrue($scannerFactory->isFileMultiTarget());
+        $scannerFactory->setFileSecondLevelFilter(
+            $handler = $this->getMockForAbstractClass(SecondLevelFilter::class),
             false
         );
-        self::assertFalse($scannerFactory->isLeafMultiTarget());
-        self::assertSame($handler, $scannerFactory->getLeafTargetHandler());
+        self::assertFalse($scannerFactory->isFileMultiTarget());
+        self::assertSame($handler, $scannerFactory->getFileSecondLevelFilter());
     }
 
     public function testNewInstance()
@@ -101,7 +92,6 @@ class ScannerFactoryTest extends ScannerFactoryCase
             $visitor = $this->getMockForAbstractClass(Visitor::class)
         );
         self::assertSame($visitor, $scanner->getVisitor());
-        self::assertInstanceOf(DefaultNodeFactory::class, $scanner->getNodeFactory());
         self::assertInstanceOf(FilesystemDriver::class, $scanner->getDriver());
         self::assertInstanceOf(BreadthStrategy::class, $scanner->getStrategy());
     }
@@ -110,11 +100,9 @@ class ScannerFactoryTest extends ScannerFactoryCase
     {
         $scannerFactory = new ScannerFactory();
         $scanner = $scannerFactory->newInstance(
-            $visitor = $this->getMockForAbstractClass(Visitor::class),
-            $nodeFactory = $this->getMockForAbstractClass(NodeFactory::class)
+            $visitor = $this->getMockForAbstractClass(Visitor::class)
         );
         self::assertSame($visitor, $scanner->getVisitor());
-        self::assertSame($nodeFactory, $scanner->getNodeFactory());
         self::assertInstanceOf(FilesystemDriver::class, $scanner->getDriver());
         self::assertInstanceOf(BreadthStrategy::class, $scanner->getStrategy());
     }
@@ -123,47 +111,45 @@ class ScannerFactoryTest extends ScannerFactoryCase
     {
         $scannerFactory = new ScannerFactory();
 
-        $scannerFactory->setNodeTargetHandler(
-            $nodeTargetHandler = $this->getMockForAbstractClass(TargetHandler::class),
+        $scannerFactory->setDirectorySecondLevelFilter(
+            $nodeTargetHandler = $this->getMockForAbstractClass(SecondLevelFilter::class),
             false);
 
-        $scannerFactory->setLeafTargetHandler(
-            $leafTargetHandler = $this->getMockForAbstractClass(TargetHandler::class)
+        $scannerFactory->setFileSecondLevelFilter(
+            $leafTargetHandler = $this->getMockForAbstractClass(SecondLevelFilter::class)
         );
 
         $scanner = $scannerFactory->newInstance(
-            $visitor = $this->getMockForAbstractClass(Visitor::class),
-            $nodeFactory = $this->getMockForAbstractClass(NodeFactory::class)
+            $visitor = $this->getMockForAbstractClass(Visitor::class)
         );
         self::assertInstanceOf(ProxyVisitor::class, $proxyVisitor = $scanner->getVisitor());
         self::assertSame($proxyVisitor->extract(), $visitor);
 
-        self::assertSame($nodeFactory, $scanner->getNodeFactory());
         self::assertInstanceOf(FilesystemDriver::class, $scanner->getDriver());
         self::assertInstanceOf(BreadthStrategy::class, $scanner->getStrategy());
 
 
         $reflection = new \ReflectionObject($proxyVisitor);
-        $property = $reflection->getProperty('leafHandler');
+        $property = $reflection->getProperty('fileSecondLevelFilter');
         $property->setAccessible(true);
         $objectValue = $property->getValue($proxyVisitor);
 
         self::assertSame($leafTargetHandler, $objectValue);
 
         $reflection = new \ReflectionObject($proxyVisitor);
-        $property = $reflection->getProperty('nodeHandler');
+        $property = $reflection->getProperty('directorySecondLevelFilter');
         $property->setAccessible(true);
         $objectValue = $property->getValue($proxyVisitor);
         self::assertSame($nodeTargetHandler, $objectValue);
 
         $reflection = new \ReflectionObject($proxyVisitor);
-        $property = $reflection->getProperty('nodeMultiTarget');
+        $property = $reflection->getProperty('directoryMultiTarget');
         $property->setAccessible(true);
         $objectValue = $property->getValue($proxyVisitor);
         self::assertFalse($objectValue);
 
         $reflection = new \ReflectionObject($proxyVisitor);
-        $property = $reflection->getProperty('leafMultiTarget');
+        $property = $reflection->getProperty('fileMultiTarget');
         $property->setAccessible(true);
         $objectValue = $property->getValue($proxyVisitor);
         self::assertTrue($objectValue);
@@ -192,7 +178,7 @@ class ScannerFactoryTest extends ScannerFactoryCase
     public function testNewInstanceWithLeafFilters()
     {
         $scannerFactory = new ScannerFactory();
-        $scannerFactory->setLeafFilters([
+        $scannerFactory->setFileFilters([
             $filter1 = $this->getMockForAbstractClass(Filter::class),
             $filter2 = $this->getMockForAbstractClass(Filter::class),
             $filter3 = $this->getMockForAbstractClass(Filter::class),
@@ -221,7 +207,7 @@ class ScannerFactoryTest extends ScannerFactoryCase
     public function testNewInstanceWithNodeFilters()
     {
         $scannerFactory = new ScannerFactory();
-        $scannerFactory->setNodeFilters([
+        $scannerFactory->setDirectoryFilters([
             $filter1 = $this->getMockForAbstractClass(Filter::class),
             $filter2 = $this->getMockForAbstractClass(Filter::class),
             $filter3 = $this->getMockForAbstractClass(Filter::class),

@@ -5,7 +5,6 @@ namespace Test\Unit;
 
 use PHPUnit\Framework\TestCase;
 use Vinograd\FileSearch\PrefixFilter;
-use Vinograd\Scanner\Exception\ConfigurationException;
 
 class PrefixFilterTest extends TestCase
 {
@@ -40,10 +39,4 @@ class PrefixFilterTest extends TestCase
         self::assertFalse($prefixFilter->filter($badNode));
     }
 
-    public function testSetConfiguration()
-    {
-        $this->expectException(ConfigurationException::class);
-        $extensionFilter = new PrefixFilter();
-        $extensionFilter->setConfiguration(['php']);
-    }
 }

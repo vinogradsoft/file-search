@@ -3,21 +3,20 @@ declare(strict_types=1);
 
 namespace Vinograd\FileSearch;
 
-use Vinograd\Scanner\Exception\ConfigurationException;
 use Vinograd\Scanner\Filter;
 
 class ExtensionFilter implements Filter
 {
-    /** @var string */
-    private $config;
+
+    private string|null $config = null;
 
     /**
-     * @param string $path
+     * @param mixed $element
      * @return bool
      */
-    public function filter($path): bool
+    public function filter(mixed $element): bool
     {
-        return $this->config === $this->getExtension($path);
+        return $this->config === $this->getExtension($element);
     }
 
     /**
@@ -34,11 +33,9 @@ class ExtensionFilter implements Filter
     /**
      * @param string $config
      */
-    public function setConfiguration($config): void
+    public function setConfiguration(string $config): void
     {
-        if (!is_string($config)) {
-            throw new ConfigurationException('Invalid filter parameter type. String expected.');
-        }
         $this->config = $config;
     }
+
 }
