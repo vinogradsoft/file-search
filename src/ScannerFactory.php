@@ -16,8 +16,6 @@ class ScannerFactory
 
     protected Driver|null $driver = null;
 
-    protected AbstractTraversalStrategy $strategy;
-
     /** @var array<Filter> */
     protected array|null $fileFilters = null;
 
@@ -84,11 +82,7 @@ class ScannerFactory
      */
     protected function installStrategy(Scanner $scanner): void
     {
-        if (empty($this->strategy)) {
-            $scanner->setStrategy($this->strategy());
-            return;
-        }
-        $scanner->setStrategy($this->strategy);
+        $scanner->setStrategy($this->strategy());
     }
 
     /**
@@ -149,22 +143,6 @@ class ScannerFactory
     public function setDriver(Driver $driver): void
     {
         $this->driver = $driver;
-    }
-
-    /**
-     * @return AbstractTraversalStrategy|null
-     */
-    public function getStrategy(): ?AbstractTraversalStrategy
-    {
-        return $this->strategy;
-    }
-
-    /**
-     * @param AbstractTraversalStrategy $strategy
-     */
-    public function setStrategy(AbstractTraversalStrategy $strategy): void
-    {
-        $this->strategy = $strategy;
     }
 
     /**

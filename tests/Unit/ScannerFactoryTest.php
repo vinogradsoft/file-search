@@ -24,13 +24,6 @@ class ScannerFactoryTest extends ScannerFactoryCase
         self::assertSame($driver, $scannerFactory->getDriver());
     }
 
-    public function testSetStrategy()
-    {
-        $scannerFactory = new ScannerFactory();
-        $scannerFactory->setStrategy($strategy = $this->getMockForAbstractClass(AbstractTraversalStrategy::class));
-        self::assertSame($strategy, $scannerFactory->getStrategy());
-    }
-
     public function testSetLeafFilters()
     {
         $scannerFactory = new ScannerFactory();
@@ -163,16 +156,6 @@ class ScannerFactoryTest extends ScannerFactoryCase
             $this->getMockForAbstractClass(Visitor::class)
         );
         self::assertSame($scanner->getDriver(), $driver);
-    }
-
-    public function testNewInstanceWithStrategy()
-    {
-        $scannerFactory = new ScannerFactory();
-        $scannerFactory->setStrategy($strategy = $this->getMockForAbstractClass(AbstractTraversalStrategy::class));
-        $scanner = $scannerFactory->newInstance(
-            $this->getMockForAbstractClass(Visitor::class)
-        );
-        self::assertSame($scanner->getStrategy(), $strategy);
     }
 
     public function testNewInstanceWithLeafFilters()
