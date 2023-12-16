@@ -3,12 +3,8 @@ declare(strict_types=1);
 
 namespace Vinograd\FileSearch;
 
-use Vinograd\Scanner\Filter;
-
-class BasenameFilter implements Filter
+class BasenameFilter extends AbstractFilter
 {
-
-    private string|null $config;
 
     /**
      * @inheritDoc
@@ -16,14 +12,6 @@ class BasenameFilter implements Filter
     public function filter(mixed $element): bool
     {
         return $this->config === basename($element);
-    }
-
-    /**
-     * @param string $config
-     */
-    public function setConfiguration(string $config): void
-    {
-        $this->config = $config;
     }
 
 }

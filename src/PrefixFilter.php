@@ -3,12 +3,8 @@ declare(strict_types=1);
 
 namespace Vinograd\FileSearch;
 
-use Vinograd\Scanner\Filter;
-
-class PrefixFilter implements Filter
+class PrefixFilter extends AbstractFilter
 {
-
-    private string|null $config;
 
     /**
      * @param mixed $element
@@ -16,16 +12,7 @@ class PrefixFilter implements Filter
      */
     public function filter(mixed $element): bool
     {
-        $sub = substr(basename($element), 0, mb_strlen($this->config));
-        return $sub === $this->config;
-    }
-
-    /**
-     * @param string $config
-     */
-    public function setConfiguration(string $config): void
-    {
-        $this->config = $config;
+        return substr(basename($element), 0, mb_strlen($this->config)) === $this->config;
     }
 
 }

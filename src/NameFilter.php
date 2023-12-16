@@ -3,12 +3,8 @@ declare(strict_types=1);
 
 namespace Vinograd\FileSearch;
 
-use Vinograd\Scanner\Filter;
-
-class NameFilter implements Filter
+class NameFilter extends AbstractFilter
 {
-
-    private string|null $config = null;
 
     /**
      * @param mixed $element
@@ -16,16 +12,7 @@ class NameFilter implements Filter
      */
     public function filter(mixed $element): bool
     {
-        $name = pathinfo($element, PATHINFO_FILENAME);
-        return $this->config === $name;
-    }
-
-    /**
-     * @param string $config
-     */
-    public function setConfiguration(string $config): void
-    {
-        $this->config = $config;
+        return $this->config === pathinfo($element, PATHINFO_FILENAME);
     }
 
 }

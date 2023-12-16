@@ -3,12 +3,8 @@ declare(strict_types=1);
 
 namespace Vinograd\FileSearch;
 
-use Vinograd\Scanner\Filter;
-
-class ExtensionFilter implements Filter
+class ExtensionFilter extends AbstractFilter
 {
-
-    private string|null $config = null;
 
     /**
      * @param mixed $element
@@ -28,14 +24,6 @@ class ExtensionFilter implements Filter
         $name = basename($path);
         $n = strrpos($name, ".");
         return ($n === false) ? "" : substr($name, $n + 1);
-    }
-
-    /**
-     * @param string $config
-     */
-    public function setConfiguration(string $config): void
-    {
-        $this->config = $config;
     }
 
 }
