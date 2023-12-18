@@ -1,10 +1,11 @@
 <?php
+declare(strict_types=1);
 
 namespace Test\Cases;
 
 abstract class IoEnvCase extends FileSystemCase
 {
-    protected $outPath;
+    protected string $outPath;
 
     public function setUp(): void
     {

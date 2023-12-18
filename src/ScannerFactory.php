@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace Vinograd\FileSearch;
 
@@ -7,60 +8,43 @@ use Vinograd\Scanner\AbstractTraversalStrategy;
 use Vinograd\Scanner\BreadthStrategy;
 use Vinograd\Scanner\Driver;
 use Vinograd\Scanner\Filter;
-use Vinograd\Scanner\NodeFactory;
 use Vinograd\Scanner\Scanner;
 use Vinograd\Scanner\Visitor;
 
 class ScannerFactory
 {
-    /** @var Driver */
-    protected $driver;
 
-    /** @var AbstractTraversalStrategy */
-    protected $strategy;
+    protected Driver|null $driver = null;
 
-    /** @var NodeFactory */
-    protected $nodeFactory;
+    /** @var array<Filter> */
+    protected array|null $fileFilters = null;
 
-    /** @var Filter[] */
-    protected $leafFilters;
+    /** @var array<Filter> */
+    protected array|null $directoryFilters = null;
 
-    /** @var Filter[] */
-    protected $nodeFilters;
+    protected SecondLevelFilter|null $directorySecondLevelFilter = null;
 
-    /** @var TargetHandler */
-    protected $nodeTargetHandler;
+    protected SecondLevelFilter|null $fileSecondLevelFilter = null;
 
-    /** @var TargetHandler */
-    protected $leafTargetHandler;
+    protected bool $fileMultiTarget = true;
 
-    /** @var boolean */
-    protected $leafMultiTarget = true;
+    protected bool $directoryMultiTarget = true;
 
-    /** @var boolean */
-    protected $nodeMultiTarget = true;
-
-    /** @var Visitor */
-    protected $visitor;
+    protected Visitor $visitor;
 
     /**
      * @param Visitor $visitor
-     * @param NodeFactory|null $nodeFactory
      * @return Scanner
      */
-    public function newInstance(Visitor $visitor, ?NodeFactory $nodeFactory = null): Scanner
+    public function newInstance(Visitor $visitor): Scanner
     {
-        if (!empty($nodeFactory)) {
-            $this->setNodeFactory($nodeFactory);
-        }
         $this->setVisitor($visitor);
         $scanner = new Scanner();
         $this->installVisitor($scanner);
-        $this->installNodeFactory($scanner);
         $this->installDriver($scanner);
         $this->installStrategy($scanner);
-        $this->installLeafFilters($scanner);
-        $this->installNodeFilters($scanner);
+        $this->installFileFilters($scanner);
+        $this->installDirectoryFilters($scanner);
 
         return $scanner;
     }
@@ -82,14 +66,6 @@ class ScannerFactory
     }
 
     /**
-     * @return NodeFactory
-     */
-    protected function nodeFactory(): NodeFactory
-    {
-        return new DefaultNodeFactory();
-    }
-
-    /**
      * @param Scanner $scanner
      */
     protected function installDriver(Scanner $scanner): void
@@ -106,34 +82,18 @@ class ScannerFactory
      */
     protected function installStrategy(Scanner $scanner): void
     {
-        if (empty($this->strategy)) {
-            $scanner->setStrategy($this->strategy());
-            return;
-        }
-        $scanner->setStrategy($this->strategy);
+        $scanner->setStrategy($this->strategy());
     }
 
     /**
      * @param Scanner $scanner
      */
-    protected function installNodeFactory(Scanner $scanner): void
+    protected function installFileFilters(Scanner $scanner): void
     {
-        if (empty($this->nodeFactory)) {
-            $scanner->setNodeFactory($this->nodeFactory());
+        if (empty($this->fileFilters)) {
             return;
         }
-        $scanner->setNodeFactory($this->nodeFactory);
-    }
-
-    /**
-     * @param Scanner $scanner
-     */
-    protected function installLeafFilters(Scanner $scanner): void
-    {
-        if (empty($this->leafFilters)) {
-            return;
-        }
-        foreach ($this->leafFilters as $filter) {
+        foreach ($this->fileFilters as $filter) {
             $scanner->addLeafFilter($filter);
         }
     }
@@ -141,12 +101,12 @@ class ScannerFactory
     /**
      * @param Scanner $scanner
      */
-    protected function installNodeFilters(Scanner $scanner): void
+    protected function installDirectoryFilters(Scanner $scanner): void
     {
-        if (empty($this->nodeFilters)) {
+        if (empty($this->directoryFilters)) {
             return;
         }
-        foreach ($this->nodeFilters as $filter) {
+        foreach ($this->directoryFilters as $filter) {
             $scanner->addNodeFilter($filter);
         }
     }
@@ -156,13 +116,13 @@ class ScannerFactory
      */
     protected function installVisitor(Scanner $scanner): void
     {
-        if (!empty($this->nodeTargetHandler) || !empty($this->leafTargetHandler)) {
+        if (!empty($this->directorySecondLevelFilter) || !empty($this->fileSecondLevelFilter)) {
             $scanner->setVisitor(new ProxyVisitor(
                 $this->visitor,
-                $this->leafTargetHandler,
-                $this->nodeTargetHandler,
-                $this->leafMultiTarget,
-                $this->nodeMultiTarget
+                $this->fileSecondLevelFilter,
+                $this->directorySecondLevelFilter,
+                $this->fileMultiTarget,
+                $this->directoryMultiTarget
             ));
             return;
         }
@@ -179,150 +139,114 @@ class ScannerFactory
 
     /**
      * @param Driver $driver
+     * @return $this
      */
-    public function setDriver(Driver $driver): void
+    public function setDriver(Driver $driver): self
     {
         $this->driver = $driver;
+        return $this;
     }
 
     /**
-     * @return AbstractTraversalStrategy|null
+     * @return array<Filter>|null
      */
-    public function getStrategy(): ?AbstractTraversalStrategy
+    public function getFileFilters(): ?array
     {
-        return $this->strategy;
+        return $this->fileFilters;
     }
 
     /**
-     * @param AbstractTraversalStrategy $strategy
+     * @param array<Filter> $filters
+     * @return $this
      */
-    public function setStrategy(AbstractTraversalStrategy $strategy): void
+    public function setFileFilters(array $filters): self
     {
-        $this->strategy = $strategy;
+        $this->fileFilters = $filters;
+        return $this;
     }
 
     /**
-     * @return NodeFactory|null
+     * @return array<Filter>|null
      */
-    public function getNodeFactory(): ?NodeFactory
+    public function getDirectoryFilters(): ?array
     {
-        return $this->nodeFactory;
+        return $this->directoryFilters;
     }
 
     /**
-     * @param NodeFactory $nodeFactory
+     * @param array<Filter> $filters
+     * @return $this
      */
-    public function setNodeFactory(NodeFactory $nodeFactory): void
+    public function setDirectoryFilters(array $filters): self
     {
-        $this->nodeFactory = $nodeFactory;
+        $this->directoryFilters = $filters;
+        return $this;
     }
 
     /**
-     * @return Filter[]|null
+     * @return SecondLevelFilter|null
      */
-    public function getLeafFilters(): ?array
+    public function getDirectorySecondLevelFilter(): ?SecondLevelFilter
     {
-        return $this->leafFilters;
+        return $this->directorySecondLevelFilter;
     }
 
     /**
-     * @param Filter[] $leafFilters
+     * @param SecondLevelFilter $directorySecondLevelFilter
+     * @param bool $directoryMultiTarget
+     * @return ScannerFactory
      */
-    public function setLeafFilters(array $leafFilters): void
+    public function setDirectorySecondLevelFilter(SecondLevelFilter $directorySecondLevelFilter, bool $directoryMultiTarget): self
     {
-        $this->leafFilters = $leafFilters;
+        $this->directorySecondLevelFilter = $directorySecondLevelFilter;
+        $this->directoryMultiTarget = $directoryMultiTarget;
+        return $this;
     }
 
     /**
-     * @return Filter[]|null
+     * @return SecondLevelFilter|null
      */
-    public function getNodeFilters(): ?array
+    public function getFileSecondLevelFilter(): ?SecondLevelFilter
     {
-        return $this->nodeFilters;
+        return $this->fileSecondLevelFilter;
     }
 
     /**
-     * @param Filter[] $nodeFilters
+     * @param SecondLevelFilter $fileSecondLevelFilter
+     * @param bool $fileMultiTarget
+     * @return ScannerFactory
      */
-    public function setNodeFilters(array $nodeFilters): void
+    public function setFileSecondLevelFilter(SecondLevelFilter $fileSecondLevelFilter, bool $fileMultiTarget): self
     {
-        $this->nodeFilters = $nodeFilters;
-    }
-
-    /**
-     * @return TargetHandler|null
-     */
-    public function getNodeTargetHandler(): ?TargetHandler
-    {
-        return $this->nodeTargetHandler;
-    }
-
-    /**
-     * @param TargetHandler $nodeTargetHandler
-     * @param bool $nodeMultiTarget
-     */
-    public function setNodeTargetHandler(TargetHandler $nodeTargetHandler, bool $nodeMultiTarget = true): void
-    {
-        $this->nodeTargetHandler = $nodeTargetHandler;
-        $this->setNodeMultiTarget($nodeMultiTarget);
-    }
-
-    /**
-     * @return TargetHandler|null
-     */
-    public function getLeafTargetHandler(): ?TargetHandler
-    {
-        return $this->leafTargetHandler;
-    }
-
-    /**
-     * @param TargetHandler $leafTargetHandler
-     * @param bool $leafMultiTarget
-     */
-    public function setLeafTargetHandler(TargetHandler $leafTargetHandler, bool $leafMultiTarget = true): void
-    {
-        $this->leafTargetHandler = $leafTargetHandler;
-        $this->setLeafMultiTarget($leafMultiTarget);
+        $this->fileSecondLevelFilter = $fileSecondLevelFilter;
+        $this->fileMultiTarget = $fileMultiTarget;
+        return $this;
     }
 
     /**
      * @return bool
      */
-    public function isLeafMultiTarget(): bool
+    public function isFileMultiTarget(): bool
     {
-        return $this->leafMultiTarget;
-    }
-
-    /**
-     * @param bool $leafMultiTarget
-     */
-    public function setLeafMultiTarget(bool $leafMultiTarget): void
-    {
-        $this->leafMultiTarget = $leafMultiTarget;
+        return $this->fileMultiTarget;
     }
 
     /**
      * @return bool
      */
-    public function isNodeMultiTarget(): bool
+    public function isDirectoryMultiTarget(): bool
     {
-        return $this->nodeMultiTarget;
-    }
-
-    /**
-     * @param bool $nodeMultiTarget
-     */
-    public function setNodeMultiTarget(bool $nodeMultiTarget): void
-    {
-        $this->nodeMultiTarget = $nodeMultiTarget;
+        return $this->directoryMultiTarget;
     }
 
     /**
      * @param Visitor $visitor
+     * @return $this
      */
-    protected function setVisitor(Visitor $visitor): void
+    protected function setVisitor(Visitor $visitor): self
     {
         $this->visitor = $visitor;
+        return $this;
     }
 
 }

@@ -1,46 +1,52 @@
 <?php
+declare(strict_types=1);
 
 namespace Vinograd\FileSearch;
 
 use Vinograd\Scanner\AbstractTraversalStrategy;
-use Vinograd\Scanner\NodeFactory;
 use Vinograd\Scanner\Visitor;
 
 class ProxyVisitor implements Visitor
 {
-    /** @var TargetHandler|null */
-    protected $leafHandler = null;
 
-    /** @var TargetHandler|null */
-    protected $nodeHandler = null;
+    protected SecondLevelFilter|null $fileSecondLevelFilter = null;
 
-    /** @var Visitor|null */
-    protected $realVisitor = null;
+    protected SecondLevelFilter|null $directorySecondLevelFilter = null;
 
-    /** @var bool */
-    protected $leafMultiTarget = true;
+    protected Visitor|null $realVisitor = null;
 
-    /** @var bool */
-    protected $nodeMultiTarget = true;
+    protected bool $fileMultiTarget = true;
 
+    protected bool $directoryMultiTarget = true;
+
+    protected bool $stopForFiles = false;
+
+    protected bool $stopForDirectories = false;
+
+    /**
+     * @param Visitor $realVisitor
+     * @param SecondLevelFilter|null $fileSecondLevelFilter
+     * @param SecondLevelFilter|null $directorySecondLevelFilter
+     * @param bool $fileMultiTarget
+     * @param bool $directoryMultiTarget
+     */
     public function __construct(
-        Visitor        $realVisitor,
-        ?TargetHandler $leafHandler = null,
-        ?TargetHandler $nodeHandler = null,
-        bool           $leafMultiTarget = true,
-        bool           $nodeMultiTarget = true
+        Visitor            $realVisitor,
+        ?SecondLevelFilter $fileSecondLevelFilter = null,
+        ?SecondLevelFilter $directorySecondLevelFilter = null,
+        ?bool              $fileMultiTarget = null,
+        ?bool              $directoryMultiTarget = null
     )
     {
-        $this->leafHandler = $leafHandler;
-        $this->nodeHandler = $nodeHandler;
+        $this->fileSecondLevelFilter = $fileSecondLevelFilter;
+        $this->directorySecondLevelFilter = $directorySecondLevelFilter;
         $this->realVisitor = $realVisitor;
-        $this->leafMultiTarget = $leafMultiTarget;
-        $this->nodeMultiTarget = $nodeMultiTarget;
+        $this->fileMultiTarget = $fileMultiTarget === null ? true : $fileMultiTarget;
+        $this->directoryMultiTarget = $directoryMultiTarget === null ? true : $directoryMultiTarget;
     }
 
     /**
-     * @param AbstractTraversalStrategy $scanStrategy
-     * @param $detect
+     * @inheritDoc
      */
     public function scanStarted(AbstractTraversalStrategy $scanStrategy, $detect): void
     {
@@ -48,81 +54,116 @@ class ProxyVisitor implements Visitor
     }
 
     /**
-     * @param AbstractTraversalStrategy $scanStrategy
-     * @param NodeFactory $factory
-     * @param $detect
+     * @inheritDoc
      */
-    public function scanCompleted(AbstractTraversalStrategy $scanStrategy, NodeFactory $factory, $detect): void
+    public function scanCompleted(AbstractTraversalStrategy $scanStrategy, $detect): void
     {
-        $this->realVisitor->scanCompleted($scanStrategy, $factory, $detect);
+        $this->realVisitor->scanCompleted($scanStrategy, $detect);
     }
 
     /**
-     * @param AbstractTraversalStrategy $scanStrategy
-     * @param NodeFactory $factory
-     * @param $detect
-     * @param $found
-     * @param null $data
+     * @inheritDoc
      */
-    public function visitLeaf(AbstractTraversalStrategy $scanStrategy, NodeFactory $factory, $detect, $found, $data = null): void
+    public function visitLeaf(AbstractTraversalStrategy $scanStrategy, mixed $parentNode, mixed $currentElement, mixed $data = null): void
     {
-        if ($this->leafHandler === null) {
-            $this->realVisitor->visitLeaf($scanStrategy, $factory, $detect, $found, $data);
+        if ($this->fileSecondLevelFilter === null) {
+            $this->realVisitor->visitLeaf($scanStrategy, $parentNode, $currentElement, $data);
             return;
         }
-        $result = $this->leafHandler->execute($factory, $detect, $found);
+
+        if ($this->stopForFiles) {
+            return;
+        }
+
+        if ($this->directoryMultiTarget && $this->fileMultiTarget || !$this->directoryMultiTarget && $this->fileMultiTarget) {
+            $result = $this->fileSecondLevelFilter->execute($parentNode, $currentElement);
+            if ($result !== null) {
+                $this->realVisitor->visitLeaf($scanStrategy, $parentNode, $currentElement, $result);
+            }
+            return;
+        } elseif ($this->directoryMultiTarget && !$this->fileMultiTarget) {
+            $result = $this->fileSecondLevelFilter->execute($parentNode, $currentElement);
+            if ($result !== null) {
+                $this->realVisitor->visitLeaf($scanStrategy, $parentNode, $currentElement, $result);
+                $this->stopForFiles = true;
+            }
+            return;
+        }
+
+        $result = $this->fileSecondLevelFilter->execute($parentNode, $currentElement);
         if ($result !== null) {
-            $this->realVisitor->visitLeaf($scanStrategy, $factory, $detect, $found, $result);
-            $scanStrategy->setStop(!$this->leafMultiTarget);
+            $this->realVisitor->visitLeaf($scanStrategy, $parentNode, $currentElement, $result);
+            $this->stopForFiles = true;
+            $scanStrategy->setStop($this->stopForDirectories);
         }
     }
 
     /**
-     * @param AbstractTraversalStrategy $scanStrategy
-     * @param NodeFactory $factory
-     * @param $detect
-     * @param $found
-     * @param null $data
+     * @inheritDoc
      */
-    public function visitNode(AbstractTraversalStrategy $scanStrategy, NodeFactory $factory, $detect, $found, $data = null): void
+    public function visitNode(AbstractTraversalStrategy $scanStrategy, mixed $parentNode, mixed $currentNode, mixed $data = null): void
     {
-        if ($this->nodeHandler === null) {
-            $this->realVisitor->visitNode($scanStrategy, $factory, $detect, $found, $data);
+        if ($this->directorySecondLevelFilter === null) {
+            $this->realVisitor->visitNode($scanStrategy, $parentNode, $currentNode, $data);
             return;
         }
-        $result = $this->nodeHandler->execute($factory, $detect, $found);
+
+        if ($this->stopForDirectories) {
+            return;
+        }
+
+        if ($this->directoryMultiTarget && $this->fileMultiTarget || $this->directoryMultiTarget && !$this->fileMultiTarget) {
+            $result = $this->directorySecondLevelFilter->execute($parentNode, $currentNode);
+            if ($result !== null) {
+                $this->realVisitor->visitNode($scanStrategy, $parentNode, $currentNode, $result);
+            }
+            return;
+        } elseif (!$this->directoryMultiTarget && $this->fileMultiTarget) {
+            $result = $this->directorySecondLevelFilter->execute($parentNode, $currentNode);
+            if ($result !== null) {
+                $this->realVisitor->visitNode($scanStrategy, $parentNode, $currentNode, $result);
+                $this->stopForDirectories = true;
+            }
+            return;
+        }
+
+        $result = $this->directorySecondLevelFilter->execute($parentNode, $currentNode);
         if ($result !== null) {
-            $this->realVisitor->visitNode($scanStrategy, $factory, $detect, $found, $result);
-            $scanStrategy->setStop(!$this->nodeMultiTarget);
+            $this->realVisitor->visitNode($scanStrategy, $parentNode, $currentNode, $result);
+            $this->stopForDirectories = true;
+            $scanStrategy->setStop($this->stopForFiles);
         }
     }
 
-    public function clear()
+    /**
+     * @return void
+     */
+    public function clear(): void
     {
-        $this->leafHandler = null;
-        $this->nodeHandler = null;
+        $this->fileSecondLevelFilter = null;
+        $this->directorySecondLevelFilter = null;
         $this->realVisitor = null;
-        $this->nodeMultiTarget = true;
-        $this->leafMultiTarget = true;
+        $this->directoryMultiTarget = true;
+        $this->fileMultiTarget = true;
     }
 
     /**
-     * @param TargetHandler|null $leafHandler
-     * @param TargetHandler|null $nodeHandler
-     * @param bool $nodeMultiTarget
-     * @param bool $leafMultiTarget
+     * @param SecondLevelFilter|null $fileSecondLevelFilter
+     * @param SecondLevelFilter|null $directorySecondLevelFilter
+     * @param bool $directoryMultiTarget
+     * @param bool $fileMultiTarget
      */
     public function update(
-        ?TargetHandler $leafHandler = null,
-        ?TargetHandler $nodeHandler = null,
-        bool           $nodeMultiTarget = true,
-        bool           $leafMultiTarget = true
+        ?SecondLevelFilter $fileSecondLevelFilter = null,
+        ?SecondLevelFilter $directorySecondLevelFilter = null,
+        bool               $directoryMultiTarget = true,
+        bool               $fileMultiTarget = true
     ): void
     {
-        $this->leafHandler = $leafHandler;
-        $this->nodeHandler = $nodeHandler;
-        $this->nodeMultiTarget = $nodeMultiTarget;
-        $this->leafMultiTarget = $leafMultiTarget;
+        $this->fileSecondLevelFilter = $fileSecondLevelFilter;
+        $this->directorySecondLevelFilter = $directorySecondLevelFilter;
+        $this->directoryMultiTarget = $directoryMultiTarget;
+        $this->fileMultiTarget = $fileMultiTarget;
     }
 
     /**
@@ -133,17 +174,12 @@ class ProxyVisitor implements Visitor
         return $this->realVisitor;
     }
 
+    /**
+     * @return void
+     */
     public function __destruct()
     {
         $this->clear();
     }
 
-    /**
-     * @param Visitor $visitor
-     * @return bool
-     */
-    public function equals(Visitor $visitor): bool
-    {
-        return $this->realVisitor->equals($visitor);
-    }
 }

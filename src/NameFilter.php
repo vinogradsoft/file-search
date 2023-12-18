@@ -1,33 +1,18 @@
 <?php
+declare(strict_types=1);
 
 namespace Vinograd\FileSearch;
 
-use Vinograd\Scanner\Exception\ConfigurationException;
-use Vinograd\Scanner\Filter;
-
-class NameFilter implements Filter
+class NameFilter extends AbstractFilter
 {
-    /** @var string */
-    private $config;
 
     /**
-     * @param string $path
+     * @param mixed $element
      * @return bool
      */
-    public function filter($path): bool
+    public function filter(mixed $element): bool
     {
-        $name = pathinfo($path, PATHINFO_FILENAME);
-        return $this->config === $name;
+        return $this->config === pathinfo($element, PATHINFO_FILENAME);
     }
 
-    /**
-     * @param string $config
-     */
-    public function setConfiguration($config): void
-    {
-        if (!is_string($config)) {
-            throw new ConfigurationException('Invalid filter parameter type. String expected.');
-        }
-        $this->config = $config;
-    }
 }

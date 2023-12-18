@@ -1,10 +1,10 @@
 <?php
+declare(strict_types=1);
 
 namespace Test\Unit;
 
 use PHPUnit\Framework\TestCase;
 use Vinograd\FileSearch\BasenameFilter;
-use Vinograd\Scanner\Exception\ConfigurationException;
 
 class BasenameFilterTest extends TestCase
 {
@@ -56,10 +56,4 @@ class BasenameFilterTest extends TestCase
         self::assertFalse($basenameFilter->filter($badNode));
     }
 
-    public function testSetConfiguration()
-    {
-        $this->expectException(ConfigurationException::class);
-        $basenameFilter = new BasenameFilter();
-        $basenameFilter->setConfiguration(['php']);
-    }
 }
