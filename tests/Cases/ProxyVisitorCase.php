@@ -30,8 +30,4 @@ abstract class ProxyVisitorCase extends TestCase implements Visitor
 
     }
 
-    public function equals(Visitor $visitor): bool
-    {
-        return $this === $visitor;
-    }
 }

@@ -19,6 +19,10 @@ class ProxyVisitor implements Visitor
 
     protected bool $directoryMultiTarget = true;
 
+    protected bool $stopForFiles = false;
+
+    protected bool $stopForDirectories = false;
+
     /**
      * @param Visitor $realVisitor
      * @param SecondLevelFilter|null $fileSecondLevelFilter
@@ -30,15 +34,15 @@ class ProxyVisitor implements Visitor
         Visitor            $realVisitor,
         ?SecondLevelFilter $fileSecondLevelFilter = null,
         ?SecondLevelFilter $directorySecondLevelFilter = null,
-        bool               $fileMultiTarget = true,
-        bool               $directoryMultiTarget = true
+        ?bool              $fileMultiTarget = null,
+        ?bool              $directoryMultiTarget = null
     )
     {
         $this->fileSecondLevelFilter = $fileSecondLevelFilter;
         $this->directorySecondLevelFilter = $directorySecondLevelFilter;
         $this->realVisitor = $realVisitor;
-        $this->fileMultiTarget = $fileMultiTarget;
-        $this->directoryMultiTarget = $directoryMultiTarget;
+        $this->fileMultiTarget = $fileMultiTarget === null ? true : $fileMultiTarget;
+        $this->directoryMultiTarget = $directoryMultiTarget === null ? true : $directoryMultiTarget;
     }
 
     /**
@@ -66,10 +70,31 @@ class ProxyVisitor implements Visitor
             $this->realVisitor->visitLeaf($scanStrategy, $parentNode, $currentElement, $data);
             return;
         }
+
+        if ($this->stopForFiles) {
+            return;
+        }
+
+        if ($this->directoryMultiTarget && $this->fileMultiTarget || !$this->directoryMultiTarget && $this->fileMultiTarget) {
+            $result = $this->fileSecondLevelFilter->execute($parentNode, $currentElement);
+            if ($result !== null) {
+                $this->realVisitor->visitLeaf($scanStrategy, $parentNode, $currentElement, $result);
+            }
+            return;
+        } elseif ($this->directoryMultiTarget && !$this->fileMultiTarget) {
+            $result = $this->fileSecondLevelFilter->execute($parentNode, $currentElement);
+            if ($result !== null) {
+                $this->realVisitor->visitLeaf($scanStrategy, $parentNode, $currentElement, $result);
+                $this->stopForFiles = true;
+            }
+            return;
+        }
+
         $result = $this->fileSecondLevelFilter->execute($parentNode, $currentElement);
         if ($result !== null) {
             $this->realVisitor->visitLeaf($scanStrategy, $parentNode, $currentElement, $result);
-            $scanStrategy->setStop(!$this->fileMultiTarget);
+            $this->stopForFiles = true;
+            $scanStrategy->setStop($this->stopForDirectories);
         }
     }
 
@@ -82,10 +107,31 @@ class ProxyVisitor implements Visitor
             $this->realVisitor->visitNode($scanStrategy, $parentNode, $currentNode, $data);
             return;
         }
+
+        if ($this->stopForDirectories) {
+            return;
+        }
+
+        if ($this->directoryMultiTarget && $this->fileMultiTarget || $this->directoryMultiTarget && !$this->fileMultiTarget) {
+            $result = $this->directorySecondLevelFilter->execute($parentNode, $currentNode);
+            if ($result !== null) {
+                $this->realVisitor->visitNode($scanStrategy, $parentNode, $currentNode, $result);
+            }
+            return;
+        } elseif (!$this->directoryMultiTarget && $this->fileMultiTarget) {
+            $result = $this->directorySecondLevelFilter->execute($parentNode, $currentNode);
+            if ($result !== null) {
+                $this->realVisitor->visitNode($scanStrategy, $parentNode, $currentNode, $result);
+                $this->stopForDirectories = true;
+            }
+            return;
+        }
+
         $result = $this->directorySecondLevelFilter->execute($parentNode, $currentNode);
         if ($result !== null) {
             $this->realVisitor->visitNode($scanStrategy, $parentNode, $currentNode, $result);
-            $scanStrategy->setStop(!$this->directoryMultiTarget);
+            $this->stopForDirectories = true;
+            $scanStrategy->setStop($this->stopForFiles);
         }
     }
 

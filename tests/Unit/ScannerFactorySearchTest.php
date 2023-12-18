@@ -33,6 +33,7 @@ class ScannerFactorySearchTest extends StrategyCase
                 $this->outPath . '/childL/root/child1',
                 $this->outPath . '/childL/root/child1/child2',
                 $this->outPath . '/childL/root/child1/child2/child3',
+                $this->outPath . '/childL/root/child1/child2/child2',
                 $this->outPath . '/childL/root/child1/child2/child3/child4',
                 $this->outPath . '/childL/root/child1/child2/child3/child4/child5',
             ],
@@ -88,6 +89,7 @@ class ScannerFactorySearchTest extends StrategyCase
                     'root',
                     'child1',
                     'child2',
+                    'child2',
                     'child3',
                     'child4',
                     'child5',
@@ -107,7 +109,7 @@ class ScannerFactorySearchTest extends StrategyCase
             {
                 return 'file7.txt' === $currentElement ? null : $currentElement;
             }
-        });
+        }, true);
         $scanner = $scannerFactory->newInstance($this->visitor);
 
         $scanner->traverse($this->outPath);
@@ -140,6 +142,7 @@ class ScannerFactorySearchTest extends StrategyCase
                     'root',
                     'child1',
                     'child2',
+                    'child2',
                     'child3',
                     'child4',
                     'child5',
@@ -159,7 +162,7 @@ class ScannerFactorySearchTest extends StrategyCase
             {
                 return 'child1' === $currentElement ? null : $currentElement;
             }
-        });
+        }, true);
         $scanner = $scannerFactory->newInstance($this->visitor);
 
         $scanner->traverse($this->outPath);
@@ -193,6 +196,7 @@ class ScannerFactorySearchTest extends StrategyCase
                     'childL',
                     'root',
                     'child2',
+                    'child2',
                     'child3',
                     'child4',
                     'child5',
@@ -213,8 +217,8 @@ class ScannerFactorySearchTest extends StrategyCase
             {
                 return 'file7.txt' === $currentElement ? $currentElement : null;
             }
-        });
-        $scannerFactory->setFileMultiTarget(true);
+        }, true);
+
         $scanner = $scannerFactory->newInstance($this->visitor);
 
         $scanner->traverse($this->outPath);
@@ -242,6 +246,7 @@ class ScannerFactorySearchTest extends StrategyCase
                     'root',
                     'child1',
                     'child2',
+                    'child2',
                     'child3',
                     'child4',
                     'child5',
@@ -262,8 +267,8 @@ class ScannerFactorySearchTest extends StrategyCase
             {
                 return 'file7.txt' === $currentElement ? $currentElement : null;
             }
-        });
-        $scannerFactory->setFileMultiTarget(false);
+        }, false);
+
         $scanner = $scannerFactory->newInstance($this->visitor);
 
         $scanner->traverse($this->outPath);
@@ -288,7 +293,161 @@ class ScannerFactorySearchTest extends StrategyCase
                 [//directories
                     'childL',
                     'root',
-                    'child1', //why three? because the file "file7.txt" and the directory "child1" are in the same directory and sorted, so child1 was the first and the statistics were included.
+                    'child1',
+                    'child2',
+                    'child2',
+                    'child3',
+                    'child4',
+                    'child5',
+                ]
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider getCase6
+     */
+    public function testSearchWithFileMultiTargetFalseAndDirectoryMultiTargetFalse($expectedFiles, $expectedDirectories)
+    {
+        $scannerFactory = new ScannerFactory();
+
+        $scannerFactory->setFileSecondLevelFilter(new class() implements SecondLevelFilter {
+            public function execute(string $parentElement, string $currentElement): ?string
+            {
+                return 'file7.txt' === $currentElement ? $currentElement : null;
+            }
+        }, false);
+
+        $scannerFactory->setDirectorySecondLevelFilter(new class() implements SecondLevelFilter {
+            public function execute(string $parentElement, string $currentElement): ?string
+            {
+                return 'child2' === $currentElement ? $currentElement : null;
+            }
+        }, false);
+
+        $scanner = $scannerFactory->newInstance($this->visitor);
+
+        $scanner->traverse($this->outPath);
+
+        self::assertCount($this->leafCounter, $expectedFiles);
+        self::assertCount($this->nodeCounter, $expectedDirectories);
+
+        self::assertEquals($expectedFiles, $this->leafLog);
+        self::assertEquals($expectedDirectories, $this->nodeLog);
+    }
+
+    /**
+     * @return array[]
+     */
+    public function getCase6()
+    {
+        return [
+            [//line1
+                [//files
+                    'file7.txt',
+                ],
+                [//directories
+                    'child2',
+                ]
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider getCase7
+     */
+    public function testSearchWithFileMultiTargetFalseAndDirectoryMultiTargetTrue($expectedFiles, $expectedDirectories)
+    {
+        $scannerFactory = new ScannerFactory();
+
+        $scannerFactory->setFileSecondLevelFilter(new class() implements SecondLevelFilter {
+            public function execute(string $parentElement, string $currentElement): ?string
+            {
+                return 'file7.txt' === $currentElement ? $currentElement : null;
+            }
+        }, false);
+
+        $scannerFactory->setDirectorySecondLevelFilter(new class() implements SecondLevelFilter {
+            public function execute(string $parentElement, string $currentElement): ?string
+            {
+                return 'child2' === $currentElement ? $currentElement : null;
+            }
+        }, true);
+
+        $scanner = $scannerFactory->newInstance($this->visitor);
+
+        $scanner->traverse($this->outPath);
+
+        self::assertCount($this->leafCounter, $expectedFiles);
+        self::assertCount($this->nodeCounter, $expectedDirectories);
+
+        self::assertEquals($expectedFiles, $this->leafLog);
+        self::assertEquals($expectedDirectories, $this->nodeLog);
+    }
+
+    /**
+     * @return array[]
+     */
+    public function getCase7()
+    {
+        return [
+            [//line1
+                [//files
+                    'file7.txt',
+                ],
+                [//directories
+                    'child2',
+                    'child2',
+                ]
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider getCase8
+     */
+    public function testSearchWithFileMultiTargetTrueAndDirectoryMultiTargetFalse($expectedFiles, $expectedDirectories)
+    {
+        $scannerFactory = new ScannerFactory();
+
+        $scannerFactory->setFileSecondLevelFilter(new class() implements SecondLevelFilter {
+            public function execute(string $parentElement, string $currentElement): ?string
+            {
+                return 'file7.txt' === $currentElement ? $currentElement : null;
+            }
+        }, true);
+
+        $scannerFactory->setDirectorySecondLevelFilter(new class() implements SecondLevelFilter {
+            public function execute(string $parentElement, string $currentElement): ?string
+            {
+                return 'child2' === $currentElement ? $currentElement : null;
+            }
+        }, false);
+
+        $scanner = $scannerFactory->newInstance($this->visitor);
+
+        $scanner->traverse($this->outPath);
+
+        self::assertCount($this->leafCounter, $expectedFiles);
+        self::assertCount($this->nodeCounter, $expectedDirectories);
+
+        self::assertEquals($expectedFiles, $this->leafLog);
+        self::assertEquals($expectedDirectories, $this->nodeLog);
+    }
+
+    /**
+     * @return array[]
+     */
+    public function getCase8()
+    {
+        return [
+            [//line1
+                [//files
+                    'file7.txt',
+                    'file7.txt',
+                ],
+                [//directories
+                    'child2',
                 ]
             ],
         ];

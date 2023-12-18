@@ -8,7 +8,6 @@ use Vinograd\FilesDriver\FilesystemDriver;
 use Vinograd\FileSearch\ProxyVisitor;
 use Vinograd\FileSearch\ScannerFactory;
 use Vinograd\FileSearch\SecondLevelFilter;
-use Vinograd\Scanner\AbstractTraversalStrategy;
 use Vinograd\Scanner\BreadthStrategy;
 use Vinograd\Scanner\Driver;
 use Vinograd\Scanner\Filter;
@@ -24,7 +23,7 @@ class ScannerFactoryTest extends ScannerFactoryCase
         self::assertSame($driver, $scannerFactory->getDriver());
     }
 
-    public function testSetLeafFilters()
+    public function testSetFileFilters()
     {
         $scannerFactory = new ScannerFactory();
         self::assertEmpty($scannerFactory->getFileFilters());
@@ -39,7 +38,7 @@ class ScannerFactoryTest extends ScannerFactoryCase
         self::assertContains($filter3, $filters);
     }
 
-    public function testSetNodeFilters()
+    public function testSetDirectoryFilters()
     {
         $scannerFactory = new ScannerFactory();
         self::assertEmpty($scannerFactory->getDirectoryFilters());
@@ -54,7 +53,7 @@ class ScannerFactoryTest extends ScannerFactoryCase
         self::assertContains($filter3, $filters);
     }
 
-    public function testSetNodeTargetHandler()
+    public function testSetDirectorySecondLevelFilter()
     {
         $scannerFactory = new ScannerFactory();
         self::assertTrue($scannerFactory->isDirectoryMultiTarget());
@@ -66,7 +65,7 @@ class ScannerFactoryTest extends ScannerFactoryCase
         self::assertSame($handler, $scannerFactory->getDirectorySecondLevelFilter());
     }
 
-    public function testSetLeafTargetHandler()
+    public function testFileSecondLevelFilter()
     {
         $scannerFactory = new ScannerFactory();
         self::assertTrue($scannerFactory->isFileMultiTarget());
@@ -89,27 +88,17 @@ class ScannerFactoryTest extends ScannerFactoryCase
         self::assertInstanceOf(BreadthStrategy::class, $scanner->getStrategy());
     }
 
-    public function testNewInstanceWithNodeFactory()
-    {
-        $scannerFactory = new ScannerFactory();
-        $scanner = $scannerFactory->newInstance(
-            $visitor = $this->getMockForAbstractClass(Visitor::class)
-        );
-        self::assertSame($visitor, $scanner->getVisitor());
-        self::assertInstanceOf(FilesystemDriver::class, $scanner->getDriver());
-        self::assertInstanceOf(BreadthStrategy::class, $scanner->getStrategy());
-    }
-
-    public function testNewInstanceWithTargetHandlers()
+    public function testNewInstanceWithSecondLevelFilters()
     {
         $scannerFactory = new ScannerFactory();
 
         $scannerFactory->setDirectorySecondLevelFilter(
-            $nodeTargetHandler = $this->getMockForAbstractClass(SecondLevelFilter::class),
+            $directorySecondLevelFilter = $this->getMockForAbstractClass(SecondLevelFilter::class),
             false);
 
         $scannerFactory->setFileSecondLevelFilter(
-            $leafTargetHandler = $this->getMockForAbstractClass(SecondLevelFilter::class)
+            $fileSecondLevelFilter = $this->getMockForAbstractClass(SecondLevelFilter::class),
+            true
         );
 
         $scanner = $scannerFactory->newInstance(
@@ -127,13 +116,13 @@ class ScannerFactoryTest extends ScannerFactoryCase
         $property->setAccessible(true);
         $objectValue = $property->getValue($proxyVisitor);
 
-        self::assertSame($leafTargetHandler, $objectValue);
+        self::assertSame($fileSecondLevelFilter, $objectValue);
 
         $reflection = new \ReflectionObject($proxyVisitor);
         $property = $reflection->getProperty('directorySecondLevelFilter');
         $property->setAccessible(true);
         $objectValue = $property->getValue($proxyVisitor);
-        self::assertSame($nodeTargetHandler, $objectValue);
+        self::assertSame($directorySecondLevelFilter, $objectValue);
 
         $reflection = new \ReflectionObject($proxyVisitor);
         $property = $reflection->getProperty('directoryMultiTarget');
@@ -158,7 +147,7 @@ class ScannerFactoryTest extends ScannerFactoryCase
         self::assertSame($scanner->getDriver(), $driver);
     }
 
-    public function testNewInstanceWithLeafFilters()
+    public function testNewInstanceWithFileFilters()
     {
         $scannerFactory = new ScannerFactory();
         $scannerFactory->setFileFilters([
@@ -187,7 +176,7 @@ class ScannerFactoryTest extends ScannerFactoryCase
         self::assertEmpty($next);
     }
 
-    public function testNewInstanceWithNodeFilters()
+    public function testNewInstanceWithDirectoryFilters()
     {
         $scannerFactory = new ScannerFactory();
         $scannerFactory->setDirectoryFilters([

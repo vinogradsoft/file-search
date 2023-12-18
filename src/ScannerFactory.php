@@ -139,14 +139,16 @@ class ScannerFactory
 
     /**
      * @param Driver $driver
+     * @return $this
      */
-    public function setDriver(Driver $driver): void
+    public function setDriver(Driver $driver): self
     {
         $this->driver = $driver;
+        return $this;
     }
 
     /**
-     * @return Filter[]|null
+     * @return array<Filter>|null
      */
     public function getFileFilters(): ?array
     {
@@ -154,15 +156,17 @@ class ScannerFactory
     }
 
     /**
-     * @param Filter[] $filters
+     * @param array<Filter> $filters
+     * @return $this
      */
-    public function setFileFilters(array $filters): void
+    public function setFileFilters(array $filters): self
     {
         $this->fileFilters = $filters;
+        return $this;
     }
 
     /**
-     * @return Filter[]|null
+     * @return array<Filter>|null
      */
     public function getDirectoryFilters(): ?array
     {
@@ -170,12 +174,13 @@ class ScannerFactory
     }
 
     /**
-     * @param Filter[] $filters
-     * @return void
+     * @param array<Filter> $filters
+     * @return $this
      */
-    public function setDirectoryFilters(array $filters): void
+    public function setDirectoryFilters(array $filters): self
     {
         $this->directoryFilters = $filters;
+        return $this;
     }
 
     /**
@@ -189,11 +194,13 @@ class ScannerFactory
     /**
      * @param SecondLevelFilter $directorySecondLevelFilter
      * @param bool $directoryMultiTarget
+     * @return ScannerFactory
      */
-    public function setDirectorySecondLevelFilter(SecondLevelFilter $directorySecondLevelFilter, bool $directoryMultiTarget = true): void
+    public function setDirectorySecondLevelFilter(SecondLevelFilter $directorySecondLevelFilter, bool $directoryMultiTarget): self
     {
         $this->directorySecondLevelFilter = $directorySecondLevelFilter;
-        $this->setDirectoryMultiTarget($directoryMultiTarget);
+        $this->directoryMultiTarget = $directoryMultiTarget;
+        return $this;
     }
 
     /**
@@ -207,11 +214,13 @@ class ScannerFactory
     /**
      * @param SecondLevelFilter $fileSecondLevelFilter
      * @param bool $fileMultiTarget
+     * @return ScannerFactory
      */
-    public function setFileSecondLevelFilter(SecondLevelFilter $fileSecondLevelFilter, bool $fileMultiTarget = true): void
+    public function setFileSecondLevelFilter(SecondLevelFilter $fileSecondLevelFilter, bool $fileMultiTarget): self
     {
         $this->fileSecondLevelFilter = $fileSecondLevelFilter;
-        $this->setFileMultiTarget($fileMultiTarget);
+        $this->fileMultiTarget = $fileMultiTarget;
+        return $this;
     }
 
     /**
@@ -223,14 +232,6 @@ class ScannerFactory
     }
 
     /**
-     * @param bool $fileMultiTarget
-     */
-    public function setFileMultiTarget(bool $fileMultiTarget): void
-    {
-        $this->fileMultiTarget = $fileMultiTarget;
-    }
-
-    /**
      * @return bool
      */
     public function isDirectoryMultiTarget(): bool
@@ -239,19 +240,13 @@ class ScannerFactory
     }
 
     /**
-     * @param bool $directoryMultiTarget
-     */
-    public function setDirectoryMultiTarget(bool $directoryMultiTarget): void
-    {
-        $this->directoryMultiTarget = $directoryMultiTarget;
-    }
-
-    /**
      * @param Visitor $visitor
+     * @return $this
      */
-    protected function setVisitor(Visitor $visitor): void
+    protected function setVisitor(Visitor $visitor): self
     {
         $this->visitor = $visitor;
+        return $this;
     }
 
 }
